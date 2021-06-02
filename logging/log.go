@@ -19,8 +19,8 @@ var (
 	DefaultCallerDepth = 2
 	DefaultLevel       = DEBUG
 
-	loggerOut *log.Logger
-	loggerErr *log.Logger
+	LoggerOut *log.Logger
+	LoggerErr *log.Logger
 
 	levelFlags = []string{"DEBUG", "INFO", "WARN", "ERROR", "FATAL"}
 )
@@ -34,42 +34,42 @@ const (
 )
 
 func init() {
-	loggerOut = log.New(os.Stdout, DefaultPrefix, 0)
-	loggerErr = log.New(os.Stderr, DefaultPrefix, 0)
+	LoggerOut = log.New(os.Stdout, DefaultPrefix, 0)
+	LoggerErr = log.New(os.Stderr, DefaultPrefix, 0)
 }
 
 // Trace - only use this in case of emergency, and remove after use is done, highly avoid this
 func Trace(v ...interface{}) {
-	loggerOut.Println(getPrefix(INFO), v)
+	LoggerOut.Println(getPrefix(INFO), v)
 }
 
 func Debug(v ...interface{}) {
 	if DefaultLevel <= DEBUG {
-		loggerOut.Println(getPrefix(DEBUG), v)
+		LoggerOut.Println(getPrefix(DEBUG), v)
 	}
 }
 
 func Info(v ...interface{}) {
 	if DefaultLevel <= INFO {
-		loggerOut.Println(getPrefix(INFO), v)
+		LoggerOut.Println(getPrefix(INFO), v)
 	}
 }
 
 func Warn(v ...interface{}) {
 	if DefaultLevel <= WARNING {
-		loggerErr.Println(getPrefix(WARNING), v, string(debug.Stack()))
+		LoggerErr.Println(getPrefix(WARNING), v, string(debug.Stack()))
 	}
 }
 
 func Error(v ...interface{}) {
 	if DefaultLevel <= ERROR {
-		loggerErr.Println(getPrefix(ERROR), v, string(debug.Stack()))
+		LoggerErr.Println(getPrefix(ERROR), v, string(debug.Stack()))
 	}
 }
 
 func Fatal(v ...interface{}) {
 	if DefaultLevel <= FATAL {
-		loggerErr.Println(getPrefix(FATAL), v)
+		LoggerErr.Println(getPrefix(FATAL), v)
 		panic(v)
 	}
 }
