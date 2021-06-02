@@ -2,6 +2,7 @@ package logging
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	c "github.com/logrusorgru/aurora/v3"
 	"log"
 	"os"
@@ -71,6 +72,43 @@ func Fatal(v ...interface{}) {
 	if DefaultLevel <= FATAL {
 		LoggerErr.Println(getPrefix(FATAL), v)
 		panic(v)
+	}
+}
+
+// Tracef - only use this in case of emergency, and remove after use is done, highly avoid this
+func Tracef(s string, v ...interface{}) {
+	Trace(fmt.Sprintf(s, v...))
+}
+
+func Debugf(s string, v ...interface{}) {
+	Debugf(fmt.Sprintf(s, v...))
+}
+
+func Infof(s string, v ...interface{}) {
+	Info(fmt.Sprintf(s, v...))
+}
+
+func Warnf(s string, v ...interface{}) {
+	Warn(fmt.Sprintf(s, v...))
+}
+
+func Errorf(s string, v ...interface{}) {
+	Error(fmt.Sprintf(s, v...))
+}
+
+func Fatalf(s string, v ...interface{}) {
+	Fatal(fmt.Sprintf(s, v...))
+}
+
+// InfoErrors prints all errors
+func InfoErrors(err error) {
+	for _, err := range err.(validator.ValidationErrors) {
+		Info(fmt.Sprintf("Namespace %v\n"+"Field %v\n"+"Struct Namespace %v\n"+
+			"Struct Field %v\n"+"Tag %v\n"+"Actual Tag %v\n"+
+			"Kind %v\n"+"Type %v\n"+"Value %v\n"+"Param %v\n",
+			err.Namespace(), err.Field(), err.StructNamespace(),
+			err.StructField(), err.Tag(), err.ActualTag(),
+			err.Kind(), err.Type(), err.Value(), err.Param()))
 	}
 }
 
