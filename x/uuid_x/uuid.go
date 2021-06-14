@@ -10,6 +10,10 @@ func GetTimeUuid() *gocql.UUID {
 }
 
 func GetUuid(checkUuid string) *gocql.UUID {
+	// Since this UUID probably we expect to be nil
+	if checkUuid == "00000000-0000-0000-0000-000000000000" {
+		return nil
+	}
 	validUuid, err := gocql.ParseUUID(checkUuid)
 	if err != nil {
 		return nil
