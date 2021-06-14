@@ -26,7 +26,6 @@ func IsEmptyUuid(validUuid *gocql.UUID) bool {
 	if validUuid == nil {
 		return true
 	}
-
 	validUuidStr := validUuid.String()
 	if validUuidStr == "" || validUuidStr == "00000000-0000-0000-0000-000000000000" {
 		return true
