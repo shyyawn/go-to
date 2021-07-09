@@ -144,12 +144,6 @@ func GetAvroSchemaJson(namespace string, name string, data interface{}) (schemaJ
 	return schemaJson
 }
 
-// Encoded type is for implementing standard fields across types implementing sarama interface
-type Encoded struct {
-	encoded []byte
-	err     error
-}
-
 // EnsureEncoded json encodes the type
 func EnsureEncoded(encoded []byte, err error, encoder sarama.Encoder) ([]byte, error) {
 	if encoded == nil && err == nil {
