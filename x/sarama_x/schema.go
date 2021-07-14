@@ -37,6 +37,12 @@ type AvroSchemaField struct {
 	//Default string   `json:"default"`
 }
 
+// AvroSchemaMap is a single map field for the schema
+type AvroSchemaMap struct {
+	Type   string      `json:"type"`
+	Values interface{} `json:"values"`
+}
+
 func GetAvroSchema(namespace string, name string, data interface{}) (schema AvroSchema) {
 	return GenerateAvroSchema(namespace, name, data, nil)
 }
@@ -118,7 +124,15 @@ func createSchema(namespace string, values reflect.Value, schemaFields *[]AvroSc
 					GenerateAvroSchema(namespace, fieldType, nil, &field)
 					inFieldType = GetAvroSchema(namespace, fieldType, field)
 				} else {
-					inFieldType = fieldType
+					switch fieldType {
+					case "map[string]interface {}":
+						inFieldType = AvroSchemaMap{
+							Type:   "map",
+							Values: []string{"int", "long", "float", "double", "string", "boolean"},
+						}
+					default:
+						inFieldType = fieldType
+					}
 				}
 				log.Info(c.BrightYellow("Matched"), c.Cyan(typeField.Type), c.BgCyan(typeField.Name), c.BrightGreen(fieldName), c.BgBrightGreen(field.Kind()))
 				*schemaFields = append(*schemaFields, AvroSchemaField{
