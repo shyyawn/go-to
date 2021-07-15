@@ -129,7 +129,17 @@ func createSchema(namespace string, values reflect.Value, schemaFields *[]AvroSc
 						// this should pass as json string
 						inFieldType = "string"
 					default:
+						// @todo: untested, go's types and avro types are bit different, need a conversion function
 						inFieldType = fieldType
+						if strings.Contains(fieldType, "map[string]") {
+							// @todo: untested, go's types and avro types are bit different, need a conversion function
+							valType := strings.ReplaceAll(strings.ReplaceAll(fieldType, "map[string]", ""),
+								" {}", "")
+							inFieldType = AvroSchemaMap{
+								Type:   "map",
+								Values: valType,
+							}
+						}
 					}
 				}
 				log.Info(c.BrightYellow("Matched"), c.Cyan(typeField.Type), c.BgCyan(typeField.Name), c.BrightGreen(fieldName), c.BgBrightGreen(field.Kind()))
