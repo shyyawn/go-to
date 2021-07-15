@@ -126,10 +126,8 @@ func createSchema(namespace string, values reflect.Value, schemaFields *[]AvroSc
 				} else {
 					switch fieldType {
 					case "map[string]interface {}":
-						inFieldType = AvroSchemaMap{
-							Type:   "map",
-							Values: []string{"int", "long", "float", "double", "string", "boolean"},
-						}
+						// this should pass as json string
+						inFieldType = "string"
 					default:
 						inFieldType = fieldType
 					}
