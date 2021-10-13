@@ -10,16 +10,30 @@ import (
 )
 
 type Mysql struct {
-	db       *sql.DB
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	Net      string `mapstructure:"net"`
-	Addr     string `mapstructure:"addr"`
-	DBName   string `mapstructure:"db_name"`
+	db           *sql.DB
+	User         string `mapstructure:"user"`
+	Password     string `mapstructure:"password"`
+	Net          string `mapstructure:"net"`
+	Addr         string `mapstructure:"addr"`
+	DBName       string `mapstructure:"db_name"`
+	Timeout      int    `json:"timeout"`
+	ReadTimeout  int    `json:"read_timeout"`
+	WriteTimeout int    `json:"write_timeout"`
 }
 
 func (ds *Mysql) LoadFromConfig(key string, config *viper.Viper) error {
-	return source.LoadFromConfig(key, config, ds)
+	err := source.LoadFromConfig(key, config, ds)
+	//Defaults
+	if ds.Timeout == 0 {
+		ds.Timeout = 5
+	}
+	if ds.ReadTimeout == 0 {
+		ds.ReadTimeout = 60
+	}
+	if ds.WriteTimeout == 0 {
+		ds.WriteTimeout = 60
+	}
+	return err
 }
 
 func (ds *Mysql) Db() *sql.DB {
@@ -38,9 +52,9 @@ func (ds *Mysql) Db() *sql.DB {
 		Net:          ds.Net,
 		Addr:         ds.Addr,
 		DBName:       ds.DBName,
-		Timeout:      5 * time.Second,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		Timeout:      time.Duration(ds.Timeout) * time.Second,
+		ReadTimeout:  time.Duration(ds.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(ds.WriteTimeout) * time.Second,
 	}
 
 	var err error
