@@ -11,16 +11,17 @@ import (
 )
 
 type Mysql struct {
-	db           *sql.DB
-	User         string `mapstructure:"user"`
-	Password     string `mapstructure:"password"`
-	Net          string `mapstructure:"net"`
-	Addr         string `mapstructure:"addr"`
-	DBName       string `mapstructure:"db_name"`
-	Timeout      int    `json:"timeout"`
-	ReadTimeout  int    `json:"read_timeout"`
-	WriteTimeout int    `json:"write_timeout"`
-	lock         sync.RWMutex
+	db                   *sql.DB
+	User                 string `mapstructure:"user"`
+	Password             string `mapstructure:"password"`
+	Net                  string `mapstructure:"net"`
+	Addr                 string `mapstructure:"addr"`
+	DBName               string `mapstructure:"db_name"`
+	AllowNativePasswords bool   `mapstructure:"allow_native_passwords"`
+	Timeout              int    `json:"timeout"`
+	ReadTimeout          int    `json:"read_timeout"`
+	WriteTimeout         int    `json:"write_timeout"`
+	lock                 sync.RWMutex
 }
 
 func (ds *Mysql) LoadFromConfig(key string, config *viper.Viper) error {
@@ -51,14 +52,15 @@ func (ds *Mysql) Db() *sql.DB {
 	defer ds.lock.Unlock()
 	ds.lock.Lock()
 	cfg := mysql.Config{
-		User:         ds.User,
-		Passwd:       ds.Password,
-		Net:          ds.Net,
-		Addr:         ds.Addr,
-		DBName:       ds.DBName,
-		Timeout:      time.Duration(ds.Timeout) * time.Second,
-		ReadTimeout:  time.Duration(ds.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(ds.WriteTimeout) * time.Second,
+		User:                 ds.User,
+		Passwd:               ds.Password,
+		Net:                  ds.Net,
+		Addr:                 ds.Addr,
+		DBName:               ds.DBName,
+		Timeout:              time.Duration(ds.Timeout) * time.Second,
+		ReadTimeout:          time.Duration(ds.ReadTimeout) * time.Second,
+		WriteTimeout:         time.Duration(ds.WriteTimeout) * time.Second,
+		AllowNativePasswords: ds.AllowNativePasswords,
 	}
 
 	var err error
