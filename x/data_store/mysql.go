@@ -6,6 +6,7 @@ import (
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type Mysql struct {
 	Timeout      int    `json:"timeout"`
 	ReadTimeout  int    `json:"read_timeout"`
 	WriteTimeout int    `json:"write_timeout"`
+	lock         sync.RWMutex
 }
 
 func (ds *Mysql) LoadFromConfig(key string, config *viper.Viper) error {
@@ -46,6 +48,8 @@ func (ds *Mysql) Db() *sql.DB {
 		}
 	}
 
+	defer ds.lock.Unlock()
+	ds.lock.Lock()
 	cfg := mysql.Config{
 		User:         ds.User,
 		Passwd:       ds.Password,
