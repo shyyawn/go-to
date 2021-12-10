@@ -201,12 +201,16 @@ func EnsureAvroEncoded(namespace string, encoded []byte, err error, name string,
 		if err != nil {
 			log.Fatalf("Failed to convert Go map to Avro binary data: %v", err)
 		}
+		log.Info("Kafka Messaged:", string(binaryValue))
+
 		var binaryMsg []byte
 		binaryMsg = append(binaryMsg, byte(0))
 		binarySchemaId := make([]byte, 4)
 		binary.BigEndian.PutUint32(binarySchemaId, uint32(1))
 		binaryMsg = append(binaryMsg, binarySchemaId...)
 		binaryMsg = append(binaryMsg, binaryValue...)
+
+		log.Info("Kafka Finaled:", string(binaryValue))
 		encoded = binaryMsg
 	}
 
