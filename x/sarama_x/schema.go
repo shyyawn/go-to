@@ -1,6 +1,7 @@
 package sarama_x
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"github.com/Shopify/sarama"
 	"github.com/linkedin/goavro/v2"
@@ -196,11 +197,17 @@ func EnsureAvroEncoded(namespace string, encoded []byte, err error, name string,
 		if err != nil {
 			log.Fatalf("Failed to create the Avro Codec: %v", err)
 		}
-		binary, err := codec.BinaryFromNative(nil, data)
+		binaryValue, err := codec.BinaryFromNative(nil, data)
 		if err != nil {
 			log.Fatalf("Failed to convert Go map to Avro binary data: %v", err)
 		}
-		encoded = binary
+		var binaryMsg []byte
+		binaryMsg = append(binaryMsg, byte(0))
+		binarySchemaId := make([]byte, 4)
+		binary.BigEndian.PutUint32(binarySchemaId, uint32(1))
+		binaryMsg = append(binaryMsg, binarySchemaId...)
+		binaryMsg = append(binaryMsg, binaryValue...)
+		encoded = binaryMsg
 	}
 
 	return encoded, err
