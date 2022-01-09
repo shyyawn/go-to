@@ -3,16 +3,20 @@ package sarama_x
 import (
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"github.com/Shopify/sarama"
 	"github.com/linkedin/goavro/v2"
 	c "github.com/logrusorgru/aurora/v3"
 	"github.com/mitchellh/mapstructure"
+	"github.com/riferrei/srclient"
 	log "github.com/shyyawn/go-to/x/logging"
 	"reflect"
 	"strings"
 )
 
 const AvroTypeRecord = "record"
+
+var RegistryHost = ""
 
 // AvroSchemaCache is for creating a cache of schemas
 var AvroSchemaCache = map[string]AvroSchemaCacheObj{}
@@ -214,5 +218,75 @@ func EnsureAvroEncoded(namespace string, encoded []byte, err error, name string,
 		encoded = binaryMsg
 	}
 
+	return encoded, err
+}
+
+func GetSchemaById(schemaId int) (*srclient.Schema, error) {
+
+	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
+
+	latestSchema, err := schemaRegistryClient.GetSchema(schemaId)
+	if err != nil {
+		return nil, fmt.Errorf("%w - schema error occurred", err)
+	}
+	// if no error, then return the schema
+	return latestSchema, nil
+}
+
+func GetSchemaBySubject(subject string) (*srclient.Schema, error) {
+
+	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
+
+	latestSchema, err := schemaRegistryClient.GetLatestSchema(subject)
+	if err != nil {
+		return nil, fmt.Errorf("%w - unable to get schema", err)
+	}
+
+	return latestSchema, nil
+}
+
+func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
+
+	// If data is not encoded, will need to encode else can simply ignore and return already encoded data
+	if (encoded == nil || len(encoded) == 0) && err == nil {
+		// Get Schema Subject <- should cache this so next time it will just use the cache
+		schemaSubject := fmt.Sprintf("%s.%s", namespace, name)
+		schema, err := GetSchemaBySubject(schemaSubject) // Should cache this for next time
+		if err != nil {
+			return encoded, err
+		}
+
+		// Decode the encoded data, needed to see if the data is already encoded or not
+		data := make(map[string]interface{})
+		mapConfig := &mapstructure.DecoderConfig{
+			TagName: "json",
+			Result:  &data,
+			Squash:  true,
+		}
+		// create a new decoder
+		decoder, _ := mapstructure.NewDecoder(mapConfig)
+		// pass encoder to set the value inside data
+		if err := decoder.Decode(encoder); err != nil {
+			log.Fatal(err)
+		}
+
+		// Start building the encoded data
+		// 1. Header
+		schemaIDBytes := make([]byte, 4)
+		// 2. Schema ID
+		binary.BigEndian.PutUint32(schemaIDBytes, uint32(schema.ID()))
+		// 3. Schema Data
+		value, _ := json.Marshal(data)
+		native, _, _ := schema.Codec().NativeFromTextual(value)
+		valueBytes, _ := schema.Codec().BinaryFromNative(nil, native)
+
+		// Build the record to save in encoded
+		var recordValue []byte // as encoded can be null, initialize just in case
+		recordValue = append(recordValue, byte(0))
+		recordValue = append(recordValue, schemaIDBytes...)
+		recordValue = append(recordValue, valueBytes...)
+
+		encoded = recordValue // set the record value to encoded
+	}
 	return encoded, err
 }

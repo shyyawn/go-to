@@ -13,6 +13,7 @@ require (
 	github.com/linkedin/goavro/v2 v2.10.0
 	github.com/logrusorgru/aurora/v3 v3.0.0
 	github.com/mitchellh/mapstructure v1.4.1
+	github.com/riferrei/srclient v0.4.0
 	github.com/spf13/viper v1.7.1
 	google.golang.org/api v0.13.0
 )
