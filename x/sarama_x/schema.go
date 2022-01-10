@@ -3,6 +3,7 @@ package sarama_x
 import (
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Shopify/sarama"
 	"github.com/linkedin/goavro/v2"
@@ -223,6 +224,11 @@ func EnsureAvroEncoded(namespace string, encoded []byte, err error, name string,
 
 func GetSchemaById(schemaId int) (*srclient.Schema, error) {
 
+	// RegistryHost has to be passed in a better way then been monkey patched like this
+	if RegistryHost == "" {
+		return nil, errors.New("no registry host is defined")
+	}
+
 	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
 
 	latestSchema, err := schemaRegistryClient.GetSchema(schemaId)
@@ -235,6 +241,11 @@ func GetSchemaById(schemaId int) (*srclient.Schema, error) {
 
 func GetSchemaBySubject(subject string) (*srclient.Schema, error) {
 
+	// RegistryHost has to be passed in a better way then been monkey patched like this
+	if RegistryHost == "" {
+		return nil, errors.New("no registry host is defined")
+	}
+
 	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
 
 	latestSchema, err := schemaRegistryClient.GetLatestSchema(subject)
@@ -245,6 +256,7 @@ func GetSchemaBySubject(subject string) (*srclient.Schema, error) {
 	return latestSchema, nil
 }
 
+// ApplyAvroEncoding uses the schema registry
 func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
 
 	// If data is not encoded, will need to encode else can simply ignore and return already encoded data
