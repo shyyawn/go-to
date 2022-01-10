@@ -17,6 +17,9 @@ import (
 
 const AvroTypeRecord = "record"
 
+var ErrSubjectNotFound = errors.New("404 Not Found: Subject in Schema Registry")
+var ErrNoRegistryHostDefined = errors.New("no registry host is defined")
+
 var RegistryHost = ""
 
 // AvroSchemaCache is for creating a cache of schemas
@@ -226,7 +229,7 @@ func GetSchemaById(schemaId int) (*srclient.Schema, error) {
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
 	if RegistryHost == "" {
-		return nil, errors.New("no registry host is defined")
+		return nil, ErrNoRegistryHostDefined
 	}
 
 	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
@@ -243,17 +246,41 @@ func GetSchemaBySubject(subject string) (*srclient.Schema, error) {
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
 	if RegistryHost == "" {
-		return nil, errors.New("no registry host is defined")
+		return nil, ErrNoRegistryHostDefined
 	}
 
 	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
 
 	latestSchema, err := schemaRegistryClient.GetLatestSchema(subject)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found: Subject") {
+			log.Error(err.Error())
+			return nil, fmt.Errorf("%w - with the error: %s", ErrSubjectNotFound, err.Error())
+		}
 		return nil, fmt.Errorf("%w - unable to get schema", err)
 	}
 
 	return latestSchema, nil
+}
+
+func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Encoder) (*srclient.Schema, error) {
+	log.Infof("Trying to create subject %s in schema registry", subject)
+
+	// RegistryHost has to be passed in a better way then been monkey patched like this
+	if RegistryHost == "" {
+		return nil, ErrNoRegistryHostDefined
+	}
+
+	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
+
+	// Generate the schema from struct
+	subjectSchema := GetAvroSchemaJson(namespace, name, encoder)
+
+	schema, err := schemaRegistryClient.CreateSchema(subject, string(subjectSchema), srclient.Avro)
+	if err != nil {
+		return nil, err
+	}
+	return schema, nil
 }
 
 // ApplyAvroEncoding uses the schema registry
@@ -265,7 +292,14 @@ func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string,
 		schemaSubject := fmt.Sprintf("%s.%s", namespace, name)
 		schema, err := GetSchemaBySubject(schemaSubject) // Should cache this for next time
 		if err != nil {
-			return encoded, err
+			if errors.Is(err, ErrSubjectNotFound) {
+				schema, err = CreateSchemaForSubject(schemaSubject, namespace, name, encoder)
+				if err != nil {
+					return encoded, err
+				}
+			} else {
+				return encoded, err
+			}
 		}
 
 		// Decode the encoded data, needed to see if the data is already encoded or not
