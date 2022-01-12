@@ -268,6 +268,7 @@ func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Enco
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
 	if RegistryHost == "" {
+		log.Error("CreateSchemaForSubject No Reg Host:", RegistryHost)
 		return nil, ErrNoRegistryHostDefined
 	}
 
