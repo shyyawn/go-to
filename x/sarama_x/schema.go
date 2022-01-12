@@ -278,8 +278,10 @@ func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Enco
 
 	schema, err := schemaRegistryClient.CreateSchema(subject, string(subjectSchema), srclient.Avro)
 	if err != nil {
+		log.Error("CreateSchemaForSubject Error:", err.Error())
 		return nil, err
 	}
+	log.Info("CreateSchemaForSubject - Created:", schema.ID())
 	return schema, nil
 }
 
