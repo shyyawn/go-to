@@ -277,6 +277,7 @@ func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Enco
 	// Generate the schema from struct
 	subjectSchema := GetAvroSchemaJson(namespace, name, encoder)
 
+	log.Info(srclient.Avro, " | ", subject, " -> ", string(subjectSchema))
 	schema, err := schemaRegistryClient.CreateSchema(subject, string(subjectSchema), srclient.Avro)
 	if err != nil {
 		log.Error("CreateSchemaForSubject Error:", err.Error())
