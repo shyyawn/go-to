@@ -135,6 +135,8 @@ func createSchema(namespace string, values reflect.Value, schemaFields *[]AvroSc
 					inFieldType = GetAvroSchema(namespace, fieldType, field)
 				} else {
 					switch fieldType {
+					case "int64":
+						inFieldType = "long"
 					case "map[string]interface {}":
 						// this should pass as json string
 						inFieldType = "string"
