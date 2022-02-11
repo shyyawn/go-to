@@ -16,6 +16,7 @@ import (
 )
 
 const AvroTypeRecord = "record"
+const SubjectPostfixValue = "value"
 
 var ErrSubjectNotFound = errors.New("404 Not Found: Subject in Schema Registry")
 var ErrNoRegistryHostDefined = errors.New("no registry host is defined")
@@ -293,7 +294,7 @@ func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string,
 	// If data is not encoded, will need to encode else can simply ignore and return already encoded data
 	if (encoded == nil || len(encoded) == 0) && err == nil {
 		// Get Schema Subject <- should cache this so next time it will just use the cache
-		schemaSubject := fmt.Sprintf("%s.%s", namespace, name)
+		schemaSubject := fmt.Sprintf("%s.%s-%s", namespace, name, SubjectPostfixValue)
 		schema, err := GetSchemaBySubject(schemaSubject) // Should cache this for next time
 		if err != nil {
 			if errors.Is(err, ErrSubjectNotFound) {
