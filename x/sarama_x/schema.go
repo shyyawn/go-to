@@ -294,11 +294,11 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 	log.Infof("Match subject %s in schema registry", subject)
 	// Generate the schema from struct
 	subjectSchema := GetAvroSchemaJson(namespace, name, encoder)
-	// Check if the
+	// Check if the schema matches
+	log.Info("Schema Matching", existingSchema, "<==>", string(subjectSchema))
 	if existingSchema == string(subjectSchema) {
 		return true
 	}
-	log.Info("Schema Mismatch", existingSchema, "<==>", string(subjectSchema))
 	return false
 }
 
