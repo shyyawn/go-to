@@ -321,7 +321,7 @@ func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string,
 			}
 		}
 		// Match existing schema with new schema
-		if MatchSchemaForSubject(schemaSubject, namespace, name, schema.Schema(), encoder) {
+		if !MatchSchemaForSubject(schemaSubject, namespace, name, schema.Schema(), encoder) {
 			schema, err = CreateSchemaForSubject(schemaSubject, namespace, name, encoder)
 			if err != nil {
 				return encoded, err
