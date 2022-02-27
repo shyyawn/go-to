@@ -290,6 +290,18 @@ func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Enco
 	return schema, nil
 }
 
+func MatchSchemaForSubject(subject, namespace, name string, existingSchema string, encoder sarama.Encoder) bool {
+	log.Infof("Match subject %s in schema registry", subject)
+	// Generate the schema from struct
+	subjectSchema := GetAvroSchemaJson(namespace, name, encoder)
+	// Check if the
+	if existingSchema == string(subjectSchema) {
+		return true
+	}
+	log.Info("Schema Mismatch", existingSchema, "<==>", string(subjectSchema))
+	return false
+}
+
 // ApplyAvroEncoding uses the schema registry
 func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
 
@@ -305,6 +317,13 @@ func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string,
 					return encoded, err
 				}
 			} else {
+				// Match existing schema with new schema
+				if MatchSchemaForSubject(schemaSubject, namespace, name, schema.Schema(), encoder) {
+					schema, err = CreateSchemaForSubject(schemaSubject, namespace, name, encoder)
+					if err != nil {
+						return encoded, err
+					}
+				}
 				return encoded, err
 			}
 		}
