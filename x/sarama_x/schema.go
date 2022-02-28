@@ -302,6 +302,26 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 	return false
 }
 
+func SetCompatibilityForSubject(subject string) (bool, error) {
+	log.Infof("Update compatibility of %s in schema registry", subject)
+
+	// RegistryHost has to be passed in a better way then been monkey patched like this
+	if RegistryHost == "" {
+		log.Error("CreateSchemaForSubject No Reg Host:", RegistryHost)
+		return false, ErrNoRegistryHostDefined
+	}
+
+	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
+
+	level, err := schemaRegistryClient.ChangeSubjectCompatibilityLevel(subject, srclient.FullTransitive)
+	if err != nil {
+		log.Error("SetCompatibilityForSubject Error:", err.Error())
+		return false, err
+	}
+	log.Info("SetCompatibilityForSubject - Level:", level)
+	return true, nil
+}
+
 // ApplyAvroEncoding uses the schema registry
 func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
 
@@ -322,6 +342,14 @@ func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string,
 		}
 		// Match existing schema with new schema
 		if !MatchSchemaForSubject(schemaSubject, namespace, name, schema.Schema(), encoder) {
+			setCompatibility, err := SetCompatibilityForSubject(schemaSubject)
+			if err != nil {
+				return encoded, err
+			}
+			if !setCompatibility {
+				log.Error("Unable to set compatibility", schemaSubject)
+				return encoded, err
+			}
 			schema, err = CreateSchemaForSubject(schemaSubject, namespace, name, encoder)
 			if err != nil {
 				return encoded, err
