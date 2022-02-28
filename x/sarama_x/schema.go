@@ -256,7 +256,8 @@ func GetSchemaBySubject(subject string) (*srclient.Schema, error) {
 
 	latestSchema, err := schemaRegistryClient.GetLatestSchema(subject)
 	if err != nil {
-		if strings.Contains(err.Error(), "404 Not Found: Subject") {
+		if strings.Contains(err.Error(), "404 Not Found: Subject") ||
+			strings.Contains(err.Error(), " not found.") {
 			log.Error(err.Error())
 			return nil, fmt.Errorf("%w - with the error: %s", ErrSubjectNotFound, err.Error())
 		}
