@@ -294,12 +294,20 @@ func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Enco
 func MatchSchemaForSubject(subject, namespace, name string, existingSchema string, encoder sarama.Encoder) bool {
 	log.Infof("Match subject %s in schema registry", subject)
 	// Generate the schema from struct
-	subjectSchema := GetAvroSchemaJson(namespace, name, encoder)
+	newSubjectSchema := GetAvroSchemaJson(namespace, name, encoder)
+
+	// @todo: will do a fix later to match this better
+	existingSchemaFields := strings.Split(existingSchema, "fields")
+	newSubjectSchemaFields := strings.Split(string(newSubjectSchema), "fields")
+
 	// Check if the schema matches
-	log.Info("Schema Matching", existingSchema, "<==>", string(subjectSchema))
-	if existingSchema == string(subjectSchema) {
+	log.Info("Schema Matching", existingSchemaFields[1], "<==>", newSubjectSchemaFields[1])
+
+	if existingSchemaFields[1] == newSubjectSchemaFields[1] {
+		log.Info("Schema Matched")
 		return true
 	}
+	log.Info("Schema Not Matched")
 	return false
 }
 
