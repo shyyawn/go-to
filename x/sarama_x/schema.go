@@ -395,7 +395,7 @@ func SetCompatibilityForSubject(subject string) (bool, error) {
 
 	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
 
-	level, err := schemaRegistryClient.ChangeSubjectCompatibilityLevel(subject, srclient.FullTransitive)
+	level, err := schemaRegistryClient.ChangeSubjectCompatibilityLevel(subject, srclient.None)
 	if err != nil {
 		log.Error("SetCompatibilityForSubject Error:", err.Error())
 		return false, err
