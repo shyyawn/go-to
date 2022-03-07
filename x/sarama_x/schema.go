@@ -66,9 +66,10 @@ func GenerateAvroSchema(namespace string, name string, data interface{}, values 
 	}
 
 	// set basic fields for schema
-	schema.Namespace = namespace
+	schema.Namespace = namespace // subfields, do they need namespace?
 	schema.Type = AvroTypeRecord
-	schema.Name = name
+	// this is done or else anything before the dot (.) will replace as namespace
+	schema.Name = strings.ReplaceAll(name, ".", "_")
 	schema.Fields = []AvroSchemaField{}
 
 	// use reflection to get the values
@@ -296,19 +297,91 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 	// Generate the schema from struct
 	newSubjectSchema := GetAvroSchemaJson(namespace, name, encoder)
 
-	// @todo: will do a fix later to match this better
-	existingSchemaFields := strings.Split(existingSchema, "fields")
-	newSubjectSchemaFields := strings.Split(string(newSubjectSchema), "fields")
+	// @todo: Way too much unmarshalling
+	existingAvroSubjectSchema := AvroSchema{}
+	err := json.Unmarshal([]byte(existingSchema), &existingAvroSubjectSchema)
+	if err != nil {
+		log.Info(err.Error())
+	}
+	newAvroSubjectSchema := AvroSchema{}
+	err = json.Unmarshal(newSubjectSchema, &newAvroSubjectSchema)
+	if err != nil {
+		log.Info(err.Error())
+	}
+	matched := true
+
+	// Match schema Meta Fields
+	if existingAvroSubjectSchema.Type != newAvroSubjectSchema.Type ||
+		existingAvroSubjectSchema.Name != newAvroSubjectSchema.Name ||
+		existingAvroSubjectSchema.Namespace != newAvroSubjectSchema.Namespace ||
+		len(existingAvroSubjectSchema.Fields) != len(newAvroSubjectSchema.Fields) {
+		log.Warn("Not Matching META in Schema")
+		matched = false
+	}
+
+	if matched {
+		// Start matching field types
+		// 1. Create a map of existing fields
+		existingFields := make(map[string]AvroSchemaField)
+		for _, existingField := range existingAvroSubjectSchema.Fields {
+			existingFields[existingField.Name] = existingField
+		}
+		// Loop new fields to check type
+		for _, newField := range newAvroSubjectSchema.Fields {
+			// Check if it exists in old one, and as the length is same of fields array, a miss means something changed
+			existingField, ok := existingFields[newField.Name]
+			if ok {
+				// @todo: Should not use reflect, better implementation can be done here
+				if reflect.TypeOf(existingField.Type).String() == "map[string]interface {}" &&
+					reflect.TypeOf(newField.Type).String() == "map[string]interface {}" {
+
+					// @todo: again more marshalling, this can be improved and the sequence of fields can cause false
+					// 			detection of field type not matching
+					existingFieldJson, err := json.Marshal(existingField)
+					if err != nil {
+						// Fatal is not the best way to go, but since I haven't tested it extensively
+						// a crash is better than debugging weird errors or rather weird code execution
+						// so am forced to fix this when the needed arises.
+						log.Fatal(err)
+					}
+					newFieldJson, err := json.Marshal(newField)
+					if err != nil {
+						// Fatal is not the best way to go, but since I haven't tested it extensively
+						// a crash is better than debugging weird errors or rather weird code execution
+						// so am forced to fix this when the needed arises.
+						log.Fatal(err)
+					}
+					// @todo: this is more related to namespace not needed in subfields, can be improved in recursive
+					//			function that generates json
+					newFieldJsonCleanup := strings.ReplaceAll(string(newFieldJson),
+						fmt.Sprintf(",\"namespace\":\"%s\"", namespace), "")
+
+					if string(existingFieldJson) != newFieldJsonCleanup {
+						log.Warn(fmt.Sprintf("Not Matching Field Type [%s] %s    !=    %s",
+							newField.Name, existingFieldJson, newFieldJsonCleanup))
+						matched = false
+					}
+				} else {
+					if existingField.Type != newField.Type {
+						matched = false
+					}
+				}
+			} else {
+				log.Warn(fmt.Sprint("Field doesn't exist", newField.Name))
+				matched = false
+			}
+		}
+	}
 
 	// Check if the schema matches
-	log.Info("Schema Matching", existingSchemaFields[1], "<==>", newSubjectSchemaFields[1])
+	log.Info("Schema Matching", existingSchema, "<==>", string(newSubjectSchema))
 
-	if existingSchemaFields[1] == newSubjectSchemaFields[1] {
+	if matched {
 		log.Info("Schema Matched")
-		return true
+	} else {
+		log.Info("Schema Not Matched")
 	}
-	log.Info("Schema Not Matched")
-	return false
+	return matched
 }
 
 func SetCompatibilityForSubject(subject string) (bool, error) {
