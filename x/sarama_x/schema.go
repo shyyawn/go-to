@@ -269,7 +269,7 @@ func GetSchemaBySubject(subject string) (*srclient.Schema, error) {
 }
 
 func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Encoder) (*srclient.Schema, error) {
-	log.Infof("Trying to create subject %s in schema registry", subject)
+	log.Info("Trying to create subject %s in schema registry", subject)
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
 	if RegistryHost == "" {
@@ -293,7 +293,7 @@ func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Enco
 }
 
 func MatchSchemaForSubject(subject, namespace, name string, existingSchema string, encoder sarama.Encoder) bool {
-	log.Infof("Match subject %s in schema registry", subject)
+	log.Info("Match subject %s in schema registry", subject)
 	// Generate the schema from struct
 	newSubjectSchema := GetAvroSchemaJson(namespace, name, encoder)
 
@@ -385,7 +385,7 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 }
 
 func SetCompatibilityForSubject(subject string) (bool, error) {
-	log.Infof("Update compatibility of %s in schema registry", subject)
+	log.Info("Update compatibility of %s in schema registry", subject)
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
 	if RegistryHost == "" {
