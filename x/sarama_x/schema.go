@@ -422,6 +422,8 @@ func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string,
 				return encoded, err
 			}
 		}
+		// @todo: Need to check the local cache and if the schema was already cached after a match regardless of
+		//			whether it matched or not, it shouldn't do this in all calls
 		// Match existing schema with new schema
 		if !MatchSchemaForSubject(schemaSubject, namespace, name, schema.Schema(), encoder) {
 			setCompatibility, err := SetCompatibilityForSubject(schemaSubject)
