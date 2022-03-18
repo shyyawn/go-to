@@ -25,6 +25,7 @@ var RegistryHost = ""
 
 // AvroSchemaCache is for creating a cache of schemas
 var AvroSchemaCache = map[string]AvroSchemaCacheObj{}
+var AvroSchemaRegistryCache = map[int]*srclient.Schema{}
 
 // AvroSchemaCacheObj is a a single cache object that will store schema object and json
 type AvroSchemaCacheObj struct {
@@ -236,12 +237,21 @@ func GetSchemaById(schemaId int) (*srclient.Schema, error) {
 		return nil, ErrNoRegistryHostDefined
 	}
 
+	// if cached return from schema registry cache
+	if cachedSchema, ok := AvroSchemaRegistryCache[schemaId]; ok {
+		return cachedSchema, nil
+	}
+
 	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
 
 	latestSchema, err := schemaRegistryClient.GetSchema(schemaId)
 	if err != nil {
 		return nil, fmt.Errorf("%w - schema error occurred", err)
 	}
+
+	// Set in cache
+	AvroSchemaRegistryCache[schemaId] = latestSchema
+
 	// if no error, then return the schema
 	return latestSchema, nil
 }
