@@ -52,36 +52,3 @@ func (ds *Kafka) Producer() sarama.AsyncProducer {
 	}()
 	return ds.producer
 }
-
-func samnple() {
-
-	//config := sarama.NewConfig()
-	//config.Producer.Return.Successes = false
-	//
-	//producer, err := sarama.NewAsyncProducer([]string{"localhost:9092"}, config)
-	//if err != nil {
-	//	gin_x.SendResponseError(ctx, 503, "Message delivery is down.")
-	//}
-	//
-	//producer.Input() <- &sarama.ProducerMessage{
-	//	Topic:     "",
-	//	Key:       nil,
-	//	Value:     nil,
-	//	Headers:   nil,
-	//	Metadata:  nil,
-	//	Offset:    0,
-	//	Partition: 0,
-	//	Timestamp: time.Time{},
-	//}
-	//
-	//select {
-	//case err := <-producer.Errors():
-	//	log.Warnf("Producer returned error: %v", err)
-	//default:
-	//	log.Info("Produced message default")
-	//}
-	//
-	//producer.Input()
-	//
-
-}
