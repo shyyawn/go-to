@@ -10,7 +10,7 @@ import (
 
 type Kafka struct {
 	config   *sarama.Config
-	lock     *sync.RWMutex
+	lock     sync.RWMutex
 	producer sarama.AsyncProducer
 	Hosts    []string `mapstructure:"hosts"`
 	Topic    string   `mapstructure:"topic"`

@@ -6,6 +6,7 @@ import (
 	log "github.com/shyyawn/go-to/x/logging"
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
+	"sync"
 )
 
 type Redis struct {
@@ -14,6 +15,7 @@ type Redis struct {
 	DB       int    `mapstructure:"db"`
 	client   *redis.Client
 	ctx      context.Context
+	lock     sync.RWMutex
 }
 
 func (ds *Redis) LoadFromConfig(key string, config *viper.Viper) error {
@@ -25,6 +27,9 @@ func (ds *Redis) Client() *redis.Client {
 	if ds.client != nil {
 		return ds.client
 	}
+
+	defer ds.lock.Unlock()
+	ds.lock.Lock()
 
 	// Will see if need this for later use
 	// Maybe can have it so that it has for health checks
@@ -44,6 +49,7 @@ func (ds *Redis) Client() *redis.Client {
 	pong, err := ds.client.Ping(ds.ctx).Result()
 	if err != nil {
 		log.Error(err)
+		ds.client = nil
 		return nil
 	}
 

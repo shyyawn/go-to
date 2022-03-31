@@ -12,7 +12,7 @@ import (
 type Cassandra struct {
 	cluster           *gocql.ClusterConfig
 	session           *gocql.Session
-	lock              *sync.RWMutex
+	lock              sync.RWMutex
 	Keyspace          string   `mapstructure:"keyspace"`
 	Hosts             []string `mapstructure:"hosts"`
 	Timeout           int      `mapstructure:"timeout"`
@@ -21,12 +21,10 @@ type Cassandra struct {
 }
 
 func (ds *Cassandra) LoadFromConfig(key string, config *viper.Viper) error {
-	ds.lock = &sync.RWMutex{}
 	return source.LoadFromConfig(key, config, ds)
 }
 
 func (ds *Cassandra) Init() error {
-	ds.lock = &sync.RWMutex{}
 	_ = ds.Cluster()
 	return nil
 }
