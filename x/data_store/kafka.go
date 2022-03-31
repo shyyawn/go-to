@@ -21,6 +21,15 @@ func (ds *Kafka) LoadFromConfig(key string, config *viper.Viper) error {
 }
 
 func (ds *Kafka) Producer() sarama.AsyncProducer {
+
+	if ds.producer != nil {
+		return ds.producer
+	}
+
+	defer ds.lock.Unlock()
+	ds.lock.Lock()
+
+	log.Info("Going to create the Kafka ASync Producer")
 	ds.config = sarama.NewConfig()
 	ds.config.Producer.RequiredAcks = sarama.WaitForAll
 	ds.config.Producer.Retry.Max = 10
@@ -30,13 +39,15 @@ func (ds *Kafka) Producer() sarama.AsyncProducer {
 	ds.producer, err = sarama.NewAsyncProducer(ds.Hosts, ds.config)
 	if err != nil {
 		log.Fatal("Failed to start Sarama producer:", err)
+		ds.producer = nil
 	}
 
 	// We will just log to STDOUT if we're not able to produce messages.
 	// Note: messages will only be returned here after all retry attempts are exhausted.
 	go func() {
 		for err := range ds.producer.Errors() {
-			log.Error("Failed to write access log entry:", err)
+			log.Error("Failed to write access log entry, resetting producer:", err)
+			ds.producer = nil
 		}
 	}()
 	return ds.producer
