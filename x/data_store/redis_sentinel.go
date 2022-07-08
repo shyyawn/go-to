@@ -11,13 +11,13 @@ import (
 )
 
 type RedisSentinel struct {
-	MasterName    string   `mapstructure:"name"`
-	SentinelAddrs []string `mapstructure:"addr"`
-	Username      string   `mapstructure:"username"`
-	Password      string   `mapstructure:"password"`
-	client        *redis.Client
-	ctx           context.Context
-	lock          sync.RWMutex
+	MasterName string   `mapstructure:"name"`
+	Addrs      []string `mapstructure:"addr"`
+	Username   string   `mapstructure:"username"`
+	Password   string   `mapstructure:"password"`
+	client     *redis.Client
+	ctx        context.Context
+	lock       sync.RWMutex
 }
 
 func (ds *RedisSentinel) LoadFromConfig(key string, config *viper.Viper) error {
@@ -38,10 +38,10 @@ func (ds *RedisSentinel) Client() *redis.Client {
 	ds.ctx = context.Background()
 
 	ds.client = redis.NewFailoverClient(&redis.FailoverOptions{
-		MasterName:    ds.MasterName,
-		SentinelAddrs: ds.SentinelAddrs,
-		Username:      ds.Username,
-		Password:      ds.Password,
+		MasterName:       ds.MasterName,
+		SentinelAddrs:    ds.Addrs,
+		SentinelUsername: ds.Username,
+		SentinelPassword: ds.Password,
 	})
 
 	pong, err := ds.client.Ping(ds.ctx).Result()
