@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// RedisSentinel @todo: Merge with redis
 type RedisSentinel struct {
 	MasterName string   `mapstructure:"name"`
 	Addrs      []string `mapstructure:"addr"`
