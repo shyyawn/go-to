@@ -43,6 +43,10 @@ func (ds *RedisSentinel) Client() *redis.Client {
 		SentinelAddrs:    ds.Addrs,
 		SentinelUsername: ds.Username,
 		SentinelPassword: ds.Password,
+		Username:         ds.Username,
+		Password:         ds.Password,
+		MaxRetries:       3,
+		PoolSize:         10,
 	})
 
 	pong, err := ds.client.Ping(ds.ctx).Result()
