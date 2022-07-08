@@ -13,6 +13,7 @@ import (
 type RedisSentinel struct {
 	MasterName    string   `mapstructure:"name"`
 	SentinelAddrs []string `mapstructure:"addr"`
+	Username      string   `mapstructure:"username"`
 	Password      string   `mapstructure:"password"`
 	client        *redis.Client
 	ctx           context.Context
@@ -39,6 +40,7 @@ func (ds *RedisSentinel) Client() *redis.Client {
 	ds.client = redis.NewFailoverClient(&redis.FailoverOptions{
 		MasterName:    ds.MasterName,
 		SentinelAddrs: ds.SentinelAddrs,
+		Username:      ds.Username,
 		Password:      ds.Password,
 	})
 
