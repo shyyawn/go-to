@@ -10,22 +10,22 @@ import (
 	"github.com/spf13/viper"
 )
 
-// RedisSentinel @todo: Merge with redis
-type RedisSentinel struct {
+// RedisCluster @todo: Merge with redis
+type RedisCluster struct {
 	MasterName string   `mapstructure:"name"`
 	Addr       []string `mapstructure:"addr"`
 	//Username   string   `mapstructure:"username"`
 	Password string `mapstructure:"password"`
-	client   *redis.Client
+	client   *redis.ClusterClient
 	ctx      context.Context
 	lock     sync.RWMutex
 }
 
-func (ds *RedisSentinel) LoadFromConfig(key string, config *viper.Viper) error {
+func (ds *RedisCluster) LoadFromConfig(key string, config *viper.Viper) error {
 	return source.LoadFromConfig(key, config, ds)
 }
 
-func (ds *RedisSentinel) Client() *redis.Client {
+func (ds *RedisCluster) Client() *redis.ClusterClient {
 
 	if ds.client != nil {
 		return ds.client
@@ -38,24 +38,25 @@ func (ds *RedisSentinel) Client() *redis.Client {
 	// Maybe can have it so that it has for health checks
 	ds.ctx = context.Background()
 
-	ds.client = redis.NewFailoverClient(&redis.FailoverOptions{
-		MasterName:    ds.MasterName,
-		SentinelAddrs: ds.Addr,
-		//SentinelUsername: ds.Username,
-		SentinelPassword: ds.Password,
-		//Username:         ds.Username,
+	ds.client = redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs:      ds.Addr,
 		Password:   ds.Password,
 		MaxRetries: 3,
 		PoolSize:   10,
 	})
 
-	pong, err := ds.client.Ping(ds.ctx).Result()
+	err := ds.client.ForEachShard(ds.ctx, func(ctx context.Context, client *redis.Client) error {
+		ping, err := client.Ping(ctx).Result()
+		if err == nil {
+			log.Info(ping)
+		}
+		return err
+	})
 	if err != nil {
 		log.Error(err)
 		ds.client = nil
 		return nil
 	}
 
-	log.Info(pong)
 	return ds.client
 }
