@@ -24,6 +24,8 @@ var (
 	LoggerErr *log.Logger
 
 	levelFlags = []string{"DEBUG", "INFO", "WARN", "ERROR", "FATAL"}
+
+	LogTrace = false
 )
 
 const (
@@ -41,7 +43,9 @@ func init() {
 
 // Trace - only use this in case of emergency, and remove after use is done, highly avoid this
 func Trace(v ...interface{}) {
-	LoggerOut.Println(getPrefix(INFO), v)
+	if LogTrace == true {
+		LoggerOut.Println(getPrefix(INFO), v)
+	}
 }
 
 func Debug(v ...interface{}) {
