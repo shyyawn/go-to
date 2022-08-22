@@ -214,7 +214,7 @@ func EnsureAvroEncoded(namespace string, encoded []byte, err error, name string,
 		if err != nil {
 			log.Fatalf("Failed to convert Go map to Avro binary data: %v", err)
 		}
-		log.Info("Kafka Messaged:", string(binaryValue))
+		//log.Info("Kafka Messaged:", string(binaryValue))
 
 		var binaryMsg []byte
 		binaryMsg = append(binaryMsg, byte(0))
@@ -223,7 +223,7 @@ func EnsureAvroEncoded(namespace string, encoded []byte, err error, name string,
 		binaryMsg = append(binaryMsg, binarySchemaId...)
 		binaryMsg = append(binaryMsg, binaryValue...)
 
-		log.Info("Kafka Finaled:", string(binaryValue))
+		//log.Info("Kafka Finaled:", string(binaryValue))
 		encoded = binaryMsg
 	}
 
@@ -279,7 +279,7 @@ func GetSchemaBySubject(subject string) (*srclient.Schema, error) {
 }
 
 func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Encoder) (*srclient.Schema, error) {
-	log.Info("Trying to create subject %s in schema registry", subject)
+	//log.Info("Trying to create subject %s in schema registry", subject)
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
 	if RegistryHost == "" {
@@ -292,18 +292,18 @@ func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Enco
 	// Generate the schema from struct
 	subjectSchema := GetAvroSchemaJson(namespace, name, encoder)
 
-	log.Info(srclient.Avro, " | ", subject, " -> ", string(subjectSchema))
+	//log.Info(srclient.Avro, " | ", subject, " -> ", string(subjectSchema))
 	schema, err := schemaRegistryClient.CreateSchema(subject, string(subjectSchema), srclient.Avro)
 	if err != nil {
 		log.Error("CreateSchemaForSubject Error:", err.Error())
 		return nil, err
 	}
-	log.Info("CreateSchemaForSubject - Created:", schema.ID())
+	//log.Info("CreateSchemaForSubject - Created:", schema.ID())
 	return schema, nil
 }
 
 func MatchSchemaForSubject(subject, namespace, name string, existingSchema string, encoder sarama.Encoder) bool {
-	log.Info("Match subject %s in schema registry", subject)
+	//log.Info("Match subject %s in schema registry", subject)
 	// Generate the schema from struct
 	newSubjectSchema := GetAvroSchemaJson(namespace, name, encoder)
 
@@ -384,12 +384,12 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 	}
 
 	// Check if the schema matches
-	log.Info("Schema Matching", existingSchema, "<==>", string(newSubjectSchema))
+	//log.Info("Schema Matching", existingSchema, "<==>", string(newSubjectSchema))
 
 	if matched {
-		log.Info("Schema Matched")
+		//log.Info("Schema Matched")
 	} else {
-		log.Info("Schema Not Matched")
+		//log.Info("Schema Not Matched")
 	}
 	return matched
 }
