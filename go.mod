@@ -10,7 +10,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/gocql/gocql v1.2.1
+	github.com/gocql/gocql v0.0.0-20220224095938-0eacd3183625
 	github.com/linkedin/goavro/v2 v2.12.0
 	github.com/logrusorgru/aurora/v3 v3.0.0
 	github.com/mitchellh/mapstructure v1.5.0
