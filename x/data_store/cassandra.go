@@ -57,7 +57,7 @@ func (ds *Cassandra) Cluster() *gocql.ClusterConfig {
 	ds.cluster.ReconnectInterval = time.Second * time.Duration(ds.ReconnectInterval)
 	ds.cluster.Consistency = gocql.LocalQuorum
 	if ds.ProtoVersion == 0 {
-		ds.ProtoVersion = 4
+		ds.ProtoVersion = 3
 	}
 	ds.cluster.ProtoVersion = ds.ProtoVersion
 	return ds.cluster
