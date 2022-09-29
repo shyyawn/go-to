@@ -18,6 +18,7 @@ type Cassandra struct {
 	Timeout           int      `mapstructure:"timeout"`
 	ReconnectInterval int      `mapstructure:"reconnect_interval"`
 	Port              int      `mapstructure:"port"`
+	ProtoVersion      int      `mapstructure:"proto_version"`
 }
 
 func (ds *Cassandra) LoadFromConfig(key string, config *viper.Viper) error {
@@ -55,5 +56,9 @@ func (ds *Cassandra) Cluster() *gocql.ClusterConfig {
 	ds.cluster.Timeout = time.Second * time.Duration(ds.Timeout)
 	ds.cluster.ReconnectInterval = time.Second * time.Duration(ds.ReconnectInterval)
 	ds.cluster.Consistency = gocql.LocalQuorum
+	if ds.ProtoVersion == 0 {
+		ds.ProtoVersion = 4
+	}
+	ds.cluster.ProtoVersion = ds.ProtoVersion
 	return ds.cluster
 }
