@@ -2,12 +2,13 @@ package data_store
 
 import (
 	"database/sql"
-	"github.com/go-sql-driver/mysql"
-	"github.com/shyyawn/go-to/x/source"
-	"github.com/spf13/viper"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/shyyawn/go-to/x/source"
+	"github.com/spf13/viper"
 )
 
 type Mysql struct {
@@ -23,6 +24,7 @@ type Mysql struct {
 	WriteTimeout         int    `json:"write_timeout"`
 	MaxOpenConns         int    `json:"max_open_conns"`
 	MaxIdleConns         int    `json:"max_idle_conns"`
+	ConnMaxLifetime      int    `json:"conn_max_lifetime"`
 	lock                 sync.RWMutex
 }
 
@@ -43,6 +45,9 @@ func (ds *Mysql) LoadFromConfig(key string, config *viper.Viper) error {
 	}
 	if ds.MaxIdleConns == 0 {
 		ds.MaxIdleConns = 5
+	}
+	if ds.ConnMaxLifetime == 0 {
+		ds.ConnMaxLifetime = 5
 	}
 	return err
 }
@@ -81,6 +86,9 @@ func (ds *Mysql) Db() *sql.DB {
 	}
 	if ds.MaxIdleConns != 0 {
 		ds.db.SetMaxIdleConns(ds.MaxIdleConns)
+	}
+	if ds.ConnMaxLifetime != 0 {
+		ds.db.SetConnMaxLifetime(time.Minute * time.Duration(ds.ConnMaxLifetime))
 	}
 	return ds.db
 }
