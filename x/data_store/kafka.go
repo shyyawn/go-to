@@ -1,19 +1,21 @@
 package data_store
 
 import (
+	"sync"
+
 	"github.com/Shopify/sarama"
 	log "github.com/shyyawn/go-to/x/logging"
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
-	"sync"
 )
 
 type Kafka struct {
-	config   *sarama.Config
-	lock     sync.RWMutex
-	producer sarama.AsyncProducer
-	Hosts    []string `mapstructure:"hosts"`
-	Topic    string   `mapstructure:"topic"`
+	config          *sarama.Config
+	lock            sync.RWMutex
+	producer        sarama.AsyncProducer
+	Hosts           []string `mapstructure:"hosts"`
+	Topic           string   `mapstructure:"topic"`
+	MaxMessageBytes int      `mapstructure:"max_message_bytes"`
 }
 
 func (ds *Kafka) LoadFromConfig(key string, config *viper.Viper) error {
@@ -34,6 +36,11 @@ func (ds *Kafka) Producer() sarama.AsyncProducer {
 	ds.config.Producer.RequiredAcks = sarama.WaitForAll
 	ds.config.Producer.Retry.Max = 10
 	ds.config.Producer.Return.Successes = false
+
+	if ds.MaxMessageBytes == 0 {
+		ds.MaxMessageBytes = 1000000
+	}
+	ds.config.Producer.MaxMessageBytes = ds.MaxMessageBytes
 
 	var err error
 	ds.producer, err = sarama.NewAsyncProducer(ds.Hosts, ds.config)
