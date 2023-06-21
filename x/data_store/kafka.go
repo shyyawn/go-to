@@ -1,11 +1,12 @@
 package data_store
 
 import (
+	"sync"
+
 	"github.com/Shopify/sarama"
 	log "github.com/shyyawn/go-to/x/logging"
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
-	"sync"
 )
 
 type Kafka struct {
@@ -34,6 +35,7 @@ func (ds *Kafka) Producer() sarama.AsyncProducer {
 	ds.config.Producer.RequiredAcks = sarama.WaitForAll
 	ds.config.Producer.Retry.Max = 10
 	ds.config.Producer.Return.Successes = false
+	ds.config.Producer.MaxMessageBytes = 5048576 // set to 5MB
 
 	var err error
 	ds.producer, err = sarama.NewAsyncProducer(ds.Hosts, ds.config)
