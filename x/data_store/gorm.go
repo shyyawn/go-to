@@ -15,6 +15,7 @@ type Gorm struct {
 	Net                  string `mapstructure:"net"`
 	Addr                 string `mapstructure:"addr"`
 	DBName               string `mapstructure:"db_name"`
+	Charset              string `mapstructure:"charset"`
 	AllowNativePasswords bool   `mapstructure:"allow_native_passwords"`
 	Timeout              int    `json:"timeout"`
 	ReadTimeout          int    `json:"read_timeout"`
@@ -33,11 +34,14 @@ func (ds *Gorm) LoadFromConfig(key string, config *viper.Viper) error {
 	if ds.WriteTimeout == 0 {
 		ds.WriteTimeout = 60
 	}
+	if ds.Charset == "" {
+		ds.Charset = "utf8"
+	}
 	return err
 }
 
 func (ds *Gorm) Db() *gorm.DB {
-	dsn := ds.User + ":" + ds.Password + "@tcp(" + ds.Addr + ")/" + ds.DBName + "?charset=utf8&parseTime=True&loc=Local"
+	dsn := ds.User + ":" + ds.Password + "@tcp(" + ds.Addr + ")/" + ds.DBName + "?charset=" + ds.Charset + "&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN:                       dsn,   // data source name
 		DefaultStringSize:         256,   // default size for string fields
