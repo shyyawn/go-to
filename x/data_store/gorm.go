@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Gorm struct {
@@ -41,7 +42,8 @@ func (ds *Gorm) LoadFromConfig(key string, config *viper.Viper) error {
 }
 
 func (ds *Gorm) Db() *gorm.DB {
-	dsn := ds.User + ":" + ds.Password + "@tcp(" + ds.Addr + ")/" + ds.DBName + "?charset=" + ds.Charset + "&parseTime=True&loc=Local"
+	dsn := ds.User + ":" + ds.Password + "@tcp(" + ds.Addr + ")/" + ds.DBName + "?charset=utf8&parseTime=True&loc=Local"
+
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN:                       dsn,   // data source name
 		DefaultStringSize:         256,   // default size for string fields
@@ -49,11 +51,22 @@ func (ds *Gorm) Db() *gorm.DB {
 		DontSupportRenameIndex:    true,  // drop & create when rename index, rename index not supported before MySQL 5.7, MariaDB
 		DontSupportRenameColumn:   true,  // `change` when rename column, rename column not supported before MySQL 8, MariaDB
 		SkipInitializeWithVersion: false, // auto configure based on currently MySQL version
-	}), &gorm.Config{})
+	}), &gorm.Config{
+		PrepareStmt: true, // Optional: Prepare statements
+		Logger:      logger.Default.LogMode(logger.Silent),
+	})
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("could not initialize Gorm connection %v", err)
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("could not get Gorm DB connection %v", err)
+	}
+
+	sqlDB.SetMaxIdleConns(10)  // Maximum number of idle connections in the pool
+	sqlDB.SetMaxOpenConns(100) // Maximum number of open connections in the pool
+	defer sqlDB.Close()
 	return db
 }
