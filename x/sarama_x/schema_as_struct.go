@@ -352,14 +352,14 @@ func (host *SchemaRegistryHost) MatchSchemaForSubject(subject, namespace, name s
 		}
 	}
 
-	// Check if the schema matches
-	log.Info("Schema Matching", existingSchema, "<==>", string(newSubjectSchema))
+	// // Check if the schema matches
+	// log.Info("Schema Matching", existingSchema, "<==>", string(newSubjectSchema))
 
-	if matched {
-		log.Info("Schema Matched")
-	} else {
-		log.Info("Schema Not Matched")
-	}
+	// if matched {
+	// 	log.Info("Schema Matched")
+	// } else {
+	// 	log.Info("Schema Not Matched")
+	// }
 	return matched
 }
 
@@ -387,7 +387,7 @@ func (host *SchemaRegistryHost) SetCompatibilityForSubject(subject string) (bool
 func (host *SchemaRegistryHost) ApplyAvroEncoding(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
 
 	// If data is not encoded, will need to encode else can simply ignore and return already encoded data
-	if (encoded == nil || len(encoded) == 0) && err == nil {
+	if len(encoded) == 0 && err == nil {
 		// Get Schema Subject <- should cache this so next time it will just use the cache
 		schemaSubject := fmt.Sprintf("%s.%s-%s", namespace, name, SubjectPostfixValue)
 		schema, err := host.GetSchemaBySubject(schemaSubject) // Should cache this for next time

@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/Shopify/sarama"
 	"github.com/linkedin/goavro/v2"
 	c "github.com/logrusorgru/aurora/v3"
 	"github.com/mitchellh/mapstructure"
 	"github.com/riferrei/srclient"
 	log "github.com/shyyawn/go-to/x/logging"
-	"reflect"
-	"strings"
 )
 
 const AvroTypeRecord = "record"
@@ -386,11 +387,11 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 	// Check if the schema matches
 	//log.Info("Schema Matching", existingSchema, "<==>", string(newSubjectSchema))
 
-	if matched {
-		//log.Info("Schema Matched")
-	} else {
-		//log.Info("Schema Not Matched")
-	}
+	// if matched {
+	// 	log.Info("Schema Matched")
+	// } else {
+	// 	log.Info("Schema Not Matched")
+	// }
 	return matched
 }
 
@@ -418,7 +419,7 @@ func SetCompatibilityForSubject(subject string) (bool, error) {
 func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
 
 	// If data is not encoded, will need to encode else can simply ignore and return already encoded data
-	if (encoded == nil || len(encoded) == 0) && err == nil {
+	if len(encoded) == 0 && err == nil {
 		// Get Schema Subject <- should cache this so next time it will just use the cache
 		schemaSubject := fmt.Sprintf("%s.%s-%s", namespace, name, SubjectPostfixValue)
 		schema, err := GetSchemaBySubject(schemaSubject) // Should cache this for next time
