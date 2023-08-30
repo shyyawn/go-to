@@ -16,54 +16,31 @@ import (
 	log "github.com/shyyawn/go-to/x/logging"
 )
 
-const AvroTypeRecord = "record"
-const SubjectPostfixValue = "value"
-
-var ErrSubjectNotFound = errors.New("404 Not Found: Subject in Schema Registry")
-var ErrNoRegistryHostDefined = errors.New("no registry host is defined")
-
-var RegistryHost = ""
-
-// AvroSchemaCache is for creating a cache of schemas
-var AvroSchemaCache = map[string]AvroSchemaCacheObj{}
-var AvroSchemaRegistryCache = map[int]*srclient.Schema{}
-
-// AvroSchemaCacheObj is a a single cache object that will store schema object and json
-type AvroSchemaCacheObj struct {
-	Json   []byte
-	Schema AvroSchema
+type SchemaRegistryHost struct {
+	RegistryHost            string
+	AvroSchemaCache         map[string]AvroSchemaCacheObj
+	AvroSchemaRegistryCache map[int]*srclient.Schema
 }
 
-// AvroSchema is the schema for a struct type
-type AvroSchema struct {
-	Namespace string            `json:"namespace"`
-	Type      string            `json:"type"`
-	Name      string            `json:"name"`
-	Fields    []AvroSchemaField `json:"fields"`
+func (host *SchemaRegistryHost) Init(schemaHost string) error {
+	if schemaHost == "" {
+		return fmt.Errorf("Host cannot be empty")
+	}
+	host.RegistryHost = schemaHost
+	host.AvroSchemaCache = map[string]AvroSchemaCacheObj{}
+	host.AvroSchemaRegistryCache = map[int]*srclient.Schema{}
+	return nil
 }
 
-// AvroSchemaField is a single field for the schema
-type AvroSchemaField struct {
-	Name string      `json:"name"`
-	Type interface{} `json:"type"`
-	//Default string   `json:"default"`
-}
-
-// AvroSchemaMap is a single map field for the schema
-type AvroSchemaMap struct {
-	Type   string      `json:"type"`
-	Values interface{} `json:"values"`
-}
-
-func GetAvroSchema(namespace string, name string, data interface{}) (schema AvroSchema) {
-	return GenerateAvroSchema(namespace, name, data, nil)
+func (host *SchemaRegistryHost) GetAvroSchema(namespace string, name string, data interface{}) (schema AvroSchema) {
+	return host.GenerateAvroSchema(namespace, name, data, nil)
 }
 
 // GenerateAvroSchema scans struct to create avro schema
-func GenerateAvroSchema(namespace string, name string, data interface{}, values *reflect.Value) (schema AvroSchema) {
+func (host *SchemaRegistryHost) GenerateAvroSchema(namespace string, name string, data interface{}, values *reflect.Value) (schema AvroSchema) {
 
 	// if cached return from schema
-	if cachedSchema, ok := AvroSchemaCache[name]; ok {
+	if cachedSchema, ok := host.AvroSchemaCache[name]; ok {
 		return cachedSchema.Schema
 	}
 
@@ -91,12 +68,12 @@ func GenerateAvroSchema(namespace string, name string, data interface{}, values 
 	// number of fields greater than zero
 	if values.NumField() > 0 {
 		// read values and create object array
-		createSchema(namespace, *values, &schema.Fields)
+		host.createSchema(namespace, *values, &schema.Fields)
 		// create json from the schema object, as will cache both schema object and json
 		schemaJson, _ := json.Marshal(schema)
 
 		// add to cache the schema
-		AvroSchemaCache[name] = AvroSchemaCacheObj{
+		host.AvroSchemaCache[name] = AvroSchemaCacheObj{
 			Schema: schema,
 			Json:   schemaJson,
 		}
@@ -104,12 +81,12 @@ func GenerateAvroSchema(namespace string, name string, data interface{}, values 
 	// if length of fields is zero, need to add empty cache object
 	if len(schema.Fields) == 0 {
 		log.Warn("The schema is empty", schema.Name, schema.Type)
-		AvroSchemaCache[name] = AvroSchemaCacheObj{}
+		host.AvroSchemaCache[name] = AvroSchemaCacheObj{}
 	}
 	return schema
 }
 
-func createSchema(namespace string, values reflect.Value, schemaFields *[]AvroSchemaField) {
+func (host *SchemaRegistryHost) createSchema(namespace string, values reflect.Value, schemaFields *[]AvroSchemaField) {
 
 	// use reflection to get the type
 	types := values.Type()
@@ -134,8 +111,8 @@ func createSchema(namespace string, values reflect.Value, schemaFields *[]AvroSc
 				var inFieldType interface{}
 
 				if strings.Contains(fieldType, ".") {
-					GenerateAvroSchema(namespace, fieldType, nil, &field)
-					inFieldType = GetAvroSchema(namespace, fieldType, field)
+					host.GenerateAvroSchema(namespace, fieldType, nil, &field)
+					inFieldType = host.GetAvroSchema(namespace, fieldType, field)
 				} else {
 					switch fieldType {
 					case "int64":
@@ -163,37 +140,28 @@ func createSchema(namespace string, values reflect.Value, schemaFields *[]AvroSc
 					Type: inFieldType,
 				})
 			} else { // Flatten anonymous types
-				createSchema(namespace, field, schemaFields)
+				host.createSchema(namespace, field, schemaFields)
 			}
 		}
 	}
 }
 
 // GetAvroSchemaJson scans struct to create avro schema json []byte
-func GetAvroSchemaJson(namespace string, name string, data interface{}) (schemaJson []byte) {
+func (host *SchemaRegistryHost) GetAvroSchemaJson(namespace string, name string, data interface{}) (schemaJson []byte) {
 	// if cached, then return from cache
-	if cachedSchema, ok := AvroSchemaCache[name]; ok {
+	if cachedSchema, ok := host.AvroSchemaCache[name]; ok {
 		return cachedSchema.Json
 	}
 	// if not in cache, get schema object
-	GetAvroSchema(namespace, name, data)
-	schemaJson = AvroSchemaCache[name].Json
+	host.GetAvroSchema(namespace, name, data)
+	schemaJson = host.AvroSchemaCache[name].Json
 	return schemaJson
 }
 
-// EnsureEncoded json encodes the type
-func EnsureEncoded(encoded []byte, err error, encoder sarama.Encoder) ([]byte, error) {
-	if encoded == nil && err == nil {
-		encodedData, errData := json.Marshal(encoder)
-		return encodedData, errData
-	}
-	return encoded, err
-}
-
 // EnsureAvroEncoded avro encodes the type
-func EnsureAvroEncoded(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
+func (host *SchemaRegistryHost) EnsureAvroEncoded(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
 
-	schema := GetAvroSchemaJson(namespace, name, encoder)
+	schema := host.GetAvroSchemaJson(namespace, name, encoder)
 
 	data := make(map[string]interface{})
 	mapConfig := &mapstructure.DecoderConfig{
@@ -215,7 +183,7 @@ func EnsureAvroEncoded(namespace string, encoded []byte, err error, name string,
 		if err != nil {
 			log.Fatalf("Failed to convert Go map to Avro binary data: %v", err)
 		}
-		//log.Info("Kafka Messaged:", string(binaryValue))
+		log.Info("Kafka Messaged:", string(binaryValue))
 
 		var binaryMsg []byte
 		binaryMsg = append(binaryMsg, byte(0))
@@ -224,26 +192,26 @@ func EnsureAvroEncoded(namespace string, encoded []byte, err error, name string,
 		binaryMsg = append(binaryMsg, binarySchemaId...)
 		binaryMsg = append(binaryMsg, binaryValue...)
 
-		//log.Info("Kafka Finaled:", string(binaryValue))
+		log.Info("Kafka Finaled:", string(binaryValue))
 		encoded = binaryMsg
 	}
 
 	return encoded, err
 }
 
-func GetSchemaById(schemaId int) (*srclient.Schema, error) {
+func (host *SchemaRegistryHost) GetSchemaById(schemaId int) (*srclient.Schema, error) {
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
-	if RegistryHost == "" {
+	if host.RegistryHost == "" {
 		return nil, ErrNoRegistryHostDefined
 	}
 
 	// if cached return from schema registry cache
-	if cachedSchema, ok := AvroSchemaRegistryCache[schemaId]; ok {
+	if cachedSchema, ok := host.AvroSchemaRegistryCache[schemaId]; ok {
 		return cachedSchema, nil
 	}
 
-	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
+	schemaRegistryClient := srclient.CreateSchemaRegistryClient(host.RegistryHost)
 
 	latestSchema, err := schemaRegistryClient.GetSchema(schemaId)
 	if err != nil {
@@ -251,20 +219,20 @@ func GetSchemaById(schemaId int) (*srclient.Schema, error) {
 	}
 
 	// Set in cache
-	AvroSchemaRegistryCache[schemaId] = latestSchema
+	host.AvroSchemaRegistryCache[schemaId] = latestSchema
 
 	// if no error, then return the schema
 	return latestSchema, nil
 }
 
-func GetSchemaBySubject(subject string) (*srclient.Schema, error) {
+func (host *SchemaRegistryHost) GetSchemaBySubject(subject string) (*srclient.Schema, error) {
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
-	if RegistryHost == "" {
+	if host.RegistryHost == "" {
 		return nil, ErrNoRegistryHostDefined
 	}
 
-	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
+	schemaRegistryClient := srclient.CreateSchemaRegistryClient(host.RegistryHost)
 
 	latestSchema, err := schemaRegistryClient.GetLatestSchema(subject)
 	if err != nil {
@@ -279,34 +247,34 @@ func GetSchemaBySubject(subject string) (*srclient.Schema, error) {
 	return latestSchema, nil
 }
 
-func CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Encoder) (*srclient.Schema, error) {
-	//log.Info("Trying to create subject %s in schema registry", subject)
+func (host *SchemaRegistryHost) CreateSchemaForSubject(subject, namespace, name string, encoder sarama.Encoder) (*srclient.Schema, error) {
+	log.Info("Trying to create subject %s in schema registry", subject)
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
-	if RegistryHost == "" {
-		log.Error("CreateSchemaForSubject No Reg Host:", RegistryHost)
+	if host.RegistryHost == "" {
+		log.Error("CreateSchemaForSubject No Reg Host:", host.RegistryHost)
 		return nil, ErrNoRegistryHostDefined
 	}
 
-	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
+	schemaRegistryClient := srclient.CreateSchemaRegistryClient(host.RegistryHost)
 
 	// Generate the schema from struct
-	subjectSchema := GetAvroSchemaJson(namespace, name, encoder)
+	subjectSchema := host.GetAvroSchemaJson(namespace, name, encoder)
 
-	//log.Info(srclient.Avro, " | ", subject, " -> ", string(subjectSchema))
+	log.Info(srclient.Avro, " | ", subject, " -> ", string(subjectSchema))
 	schema, err := schemaRegistryClient.CreateSchema(subject, string(subjectSchema), srclient.Avro)
 	if err != nil {
 		log.Error("CreateSchemaForSubject Error:", err.Error())
 		return nil, err
 	}
-	//log.Info("CreateSchemaForSubject - Created:", schema.ID())
+	log.Info("CreateSchemaForSubject - Created:", schema.ID())
 	return schema, nil
 }
 
-func MatchSchemaForSubject(subject, namespace, name string, existingSchema string, encoder sarama.Encoder) bool {
-	//log.Info("Match subject %s in schema registry", subject)
+func (host *SchemaRegistryHost) MatchSchemaForSubject(subject, namespace, name string, existingSchema string, encoder sarama.Encoder) bool {
+	log.Info("Match subject %s in schema registry", subject)
 	// Generate the schema from struct
-	newSubjectSchema := GetAvroSchemaJson(namespace, name, encoder)
+	newSubjectSchema := host.GetAvroSchemaJson(namespace, name, encoder)
 
 	// @todo: Way too much unmarshalling
 	existingAvroSubjectSchema := AvroSchema{}
@@ -347,7 +315,7 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 					reflect.TypeOf(newField.Type).String() == "map[string]interface {}" {
 
 					// @todo: again more marshalling, this can be improved and the sequence of fields can cause false
-					// 			detection of field type not matching
+					//          detection of field type not matching
 					existingFieldJson, err := json.Marshal(existingField)
 					if err != nil {
 						// Fatal is not the best way to go, but since I haven't tested it extensively
@@ -363,7 +331,7 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 						log.Fatal(err)
 					}
 					// @todo: this is more related to namespace not needed in subfields, can be improved in recursive
-					//			function that generates json
+					//          function that generates json
 					newFieldJsonCleanup := strings.ReplaceAll(string(newFieldJson),
 						fmt.Sprintf(",\"namespace\":\"%s\"", namespace), "")
 
@@ -384,8 +352,8 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 		}
 	}
 
-	// Check if the schema matches
-	//log.Info("Schema Matching", existingSchema, "<==>", string(newSubjectSchema))
+	// // Check if the schema matches
+	// log.Info("Schema Matching", existingSchema, "<==>", string(newSubjectSchema))
 
 	// if matched {
 	// 	log.Info("Schema Matched")
@@ -395,16 +363,16 @@ func MatchSchemaForSubject(subject, namespace, name string, existingSchema strin
 	return matched
 }
 
-func SetCompatibilityForSubject(subject string) (bool, error) {
+func (host *SchemaRegistryHost) SetCompatibilityForSubject(subject string) (bool, error) {
 	log.Info("Update compatibility of %s in schema registry", subject)
 
 	// RegistryHost has to be passed in a better way then been monkey patched like this
-	if RegistryHost == "" {
-		log.Error("CreateSchemaForSubject No Reg Host:", RegistryHost)
+	if host.RegistryHost == "" {
+		log.Error("CreateSchemaForSubject No Reg Host:", host.RegistryHost)
 		return false, ErrNoRegistryHostDefined
 	}
 
-	schemaRegistryClient := srclient.CreateSchemaRegistryClient(RegistryHost)
+	schemaRegistryClient := srclient.CreateSchemaRegistryClient(host.RegistryHost)
 
 	level, err := schemaRegistryClient.ChangeSubjectCompatibilityLevel(subject, srclient.None)
 	if err != nil {
@@ -416,16 +384,16 @@ func SetCompatibilityForSubject(subject string) (bool, error) {
 }
 
 // ApplyAvroEncoding uses the schema registry
-func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
+func (host *SchemaRegistryHost) ApplyAvroEncoding(namespace string, encoded []byte, err error, name string, encoder sarama.Encoder) ([]byte, error) {
 
 	// If data is not encoded, will need to encode else can simply ignore and return already encoded data
 	if len(encoded) == 0 && err == nil {
 		// Get Schema Subject <- should cache this so next time it will just use the cache
 		schemaSubject := fmt.Sprintf("%s.%s-%s", namespace, name, SubjectPostfixValue)
-		schema, err := GetSchemaBySubject(schemaSubject) // Should cache this for next time
+		schema, err := host.GetSchemaBySubject(schemaSubject) // Should cache this for next time
 		if err != nil {
 			if errors.Is(err, ErrSubjectNotFound) {
-				schema, err = CreateSchemaForSubject(schemaSubject, namespace, name, encoder)
+				schema, err = host.CreateSchemaForSubject(schemaSubject, namespace, name, encoder)
 				if err != nil {
 					return encoded, err
 				}
@@ -434,10 +402,10 @@ func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string,
 			}
 		}
 		// @todo: Need to check the local cache and if the schema was already cached after a match regardless of
-		//			whether it matched or not, it shouldn't do this in all calls
+		//          whether it matched or not, it shouldn't do this in all calls
 		// Match existing schema with new schema
-		if !MatchSchemaForSubject(schemaSubject, namespace, name, schema.Schema(), encoder) {
-			setCompatibility, err := SetCompatibilityForSubject(schemaSubject)
+		if !host.MatchSchemaForSubject(schemaSubject, namespace, name, schema.Schema(), encoder) {
+			setCompatibility, err := host.SetCompatibilityForSubject(schemaSubject)
 			if err != nil {
 				return encoded, err
 			}
@@ -445,7 +413,7 @@ func ApplyAvroEncoding(namespace string, encoded []byte, err error, name string,
 				log.Error("Unable to set compatibility", schemaSubject)
 				return encoded, err
 			}
-			schema, err = CreateSchemaForSubject(schemaSubject, namespace, name, encoder)
+			schema, err = host.CreateSchemaForSubject(schemaSubject, namespace, name, encoder)
 			if err != nil {
 				return encoded, err
 			}
