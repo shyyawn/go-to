@@ -2,17 +2,19 @@ package data_store
 
 import (
 	"context"
+	"sync"
+
 	"github.com/go-redis/redis/v8"
 	log "github.com/shyyawn/go-to/x/logging"
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
-	"sync"
 )
 
 type Redis struct {
 	Addr     string `mapstructure:"addr"`
 	Password string `mapstructure:"password"`
 	DB       int    `mapstructure:"db"`
+	Channel  string `mapstructure:"channel"`
 	client   *redis.Client
 	ctx      context.Context
 	lock     sync.RWMutex
