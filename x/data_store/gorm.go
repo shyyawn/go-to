@@ -9,6 +9,11 @@ import (
 	"gorm.io/gorm"
 )
 
+type GormInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+	Db() *gorm.DB
+}
+
 type Gorm struct {
 	User                 string `mapstructure:"user"`
 	Password             string `mapstructure:"password"`

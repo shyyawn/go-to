@@ -16,6 +16,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/riferrei/srclient v0.5.4
 	github.com/spf13/viper v1.13.0
+	github.com/stretchr/testify v1.8.4
 	google.golang.org/api v0.97.0
 	gorm.io/driver/mysql v1.3.6
 	gorm.io/gorm v1.23.10
@@ -66,12 +67,14 @@ require (
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.1 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.opencensus.io v0.23.0 // indirect

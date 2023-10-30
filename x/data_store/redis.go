@@ -2,12 +2,18 @@ package data_store
 
 import (
 	"context"
+	"sync"
+
 	"github.com/go-redis/redis/v8"
 	log "github.com/shyyawn/go-to/x/logging"
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
-	"sync"
 )
+
+type RedisInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+	Client() *redis.Client
+}
 
 type Redis struct {
 	Addr     string `mapstructure:"addr"`
