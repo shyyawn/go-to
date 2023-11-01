@@ -19,6 +19,7 @@ type Redis struct {
 	Addr     string `mapstructure:"addr"`
 	Password string `mapstructure:"password"`
 	DB       int    `mapstructure:"db"`
+	Channel  string `mapstructure:"channel"`
 	client   *redis.Client
 	ctx      context.Context
 	lock     sync.RWMutex
