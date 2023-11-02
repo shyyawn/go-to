@@ -2,20 +2,23 @@ package data_store
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"github.com/go-redis/redis/v8"
 	log "github.com/shyyawn/go-to/x/logging"
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
-	"sync"
 )
 
 type Redis struct {
-	Addr     string `mapstructure:"addr"`
-	Password string `mapstructure:"password"`
-	DB       int    `mapstructure:"db"`
-	client   *redis.Client
-	ctx      context.Context
-	lock     sync.RWMutex
+	Addr        string `mapstructure:"addr"`
+	Password    string `mapstructure:"password"`
+	DB          int    `mapstructure:"db"`
+	ReadTimeout int    `mapstructure:"readtimeout"`
+	client      *redis.Client
+	ctx         context.Context
+	lock        sync.RWMutex
 }
 
 func (ds *Redis) LoadFromConfig(key string, config *viper.Viper) error {
@@ -36,9 +39,10 @@ func (ds *Redis) Client() *redis.Client {
 	ds.ctx = context.Background()
 
 	ds.client = redis.NewClient(&redis.Options{
-		Addr:     ds.Addr,
-		Password: ds.Password,
-		DB:       ds.DB,
+		Addr:        ds.Addr,
+		Password:    ds.Password,
+		DB:          ds.DB,
+		ReadTimeout: time.Duration(ds.ReadTimeout),
 		//DialTimeout:  time.Second,
 		//MinIdleConns: 10,
 		//MaxRetries:   10,
