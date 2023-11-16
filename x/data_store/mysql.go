@@ -11,6 +11,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+type MysqlInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+	Db() *sql.DB
+}
+
 type Mysql struct {
 	db                   *sql.DB
 	User                 string `mapstructure:"user"`

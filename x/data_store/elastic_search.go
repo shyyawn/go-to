@@ -1,18 +1,24 @@
 package data_store
 
 import (
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/elastic/go-elasticsearch/v8"
 	log "github.com/shyyawn/go-to/x/logging"
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
-	"net/http"
-	"sync"
-	"time"
 )
 
 const (
 	ESDefaultTimeout = time.Second
 )
+
+type ElasticSearchInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+	Client() *elasticsearch.Client
+}
 
 type ElasticSearch struct {
 	client  *elasticsearch.Client

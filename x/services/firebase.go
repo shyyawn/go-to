@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
 	"firebase.google.com/go/messaging"
@@ -10,6 +11,13 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/api/option"
 )
+
+type FirebaseInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+	App() *firebase.App
+	Messaging() *messaging.Client
+	Auth() *auth.Client
+}
 
 type Firebase struct {
 	ProjectId       string `mapstructure:"project_id"`

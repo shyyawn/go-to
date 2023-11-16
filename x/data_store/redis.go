@@ -11,6 +11,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+type RedisInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+	Client() *redis.Client
+}
+
 type Redis struct {
 	Addr        string `mapstructure:"addr"`
 	Password    string `mapstructure:"password"`
