@@ -16,6 +16,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/riferrei/srclient v0.5.4
 	github.com/spf13/viper v1.13.0
+	github.com/stevenferrer/solr-go v0.3.3
 	go.mongodb.org/mongo-driver v1.13.1
 	google.golang.org/api v0.97.0
 	gorm.io/driver/mysql v1.3.6
