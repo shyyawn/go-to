@@ -41,7 +41,8 @@ func (ds *MongoDB) Instance() *mongo.Client {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return client
+	ds.instance = client
+	return ds.instance
 }
 
 func (ds *MongoDB) Dispose() {
