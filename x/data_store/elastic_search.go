@@ -1,13 +1,14 @@
 package data_store
 
 import (
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/elastic/go-elasticsearch/v8"
 	log "github.com/shyyawn/go-to/x/logging"
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
-	"net/http"
-	"sync"
-	"time"
 )
 
 const (
@@ -19,6 +20,7 @@ type ElasticSearch struct {
 	lock    sync.RWMutex
 	Hosts   []string      `mapstructure:"hosts"`
 	Timeout time.Duration `mapstructure:"timeout"`
+	ApiKey  string        `mapstructure:"api_key"`
 }
 
 func (ds *ElasticSearch) LoadFromConfig(key string, config *viper.Viper) error {
@@ -54,6 +56,10 @@ func (ds *ElasticSearch) Client() *elasticsearch.Client {
 		//Password: "",
 		//CACert: cert,
 		//CertificateFingerprint: fingerPrint,
+	}
+
+	if ds.ApiKey != "" {
+		cfg.APIKey = ds.ApiKey
 	}
 
 	ds.client, err = elasticsearch.NewClient(cfg)
