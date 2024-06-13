@@ -120,6 +120,8 @@ func (host *SchemaRegistryHost) createSchema(namespace string, values reflect.Va
 					case "map[string]interface {}":
 						// this should pass as json string
 						inFieldType = "string"
+					case "bool":
+						inFieldType = "boolean"
 					default:
 						// @todo: untested, go's types and avro types are bit different, need a conversion function
 						inFieldType = fieldType
