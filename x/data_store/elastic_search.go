@@ -15,6 +15,11 @@ const (
 	ESDefaultTimeout = time.Second
 )
 
+type ElasticSearchInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+	Client() *elasticsearch.Client
+}
+
 type ElasticSearch struct {
 	client  *elasticsearch.Client
 	lock    sync.RWMutex
