@@ -16,6 +16,9 @@ type Kafka struct {
 	Hosts           []string `mapstructure:"hosts"`
 	Topic           string   `mapstructure:"topic"`
 	MaxMessageBytes int      `mapstructure:"max_message_bytes"`
+	Username        string   `mapstructure:"username"`
+	Password        string   `mapstructure:"password"`
+	IsSASL          bool     `mapstructure:"is_sasl"`
 }
 
 func (ds *Kafka) LoadFromConfig(key string, config *viper.Viper) error {
