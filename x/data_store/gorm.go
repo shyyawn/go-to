@@ -1,7 +1,8 @@
 package data_store
 
 import (
-	"log"
+	"fmt"
+	"time"
 
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
@@ -20,14 +21,15 @@ type Gorm struct {
 	AllowNativePasswords bool   `mapstructure:"allow_native_passwords"`
 	Debug                bool   `mapstructure:"debug"`
 	Driver               string `mapstructure:"driver"`
-	Timeout              int    `json:"timeout"`
-	ReadTimeout          int    `json:"read_timeout"`
-	WriteTimeout         int    `json:"write_timeout"`
+	Timeout              int    `mapstructure:"timeout"`
+	ReadTimeout          int    `mapstructure:"read_timeout"`
+	WriteTimeout         int    `mapstructure:"write_timeout"`
 }
 
-func (ds *Gorm) LoadFromConfig(key string, config *viper.Viper) error {
-	err := source.LoadFromConfig(key, config, ds)
-	//Defaults
+func (ds *Gorm) setDefaults() {
+	if ds.Driver == "" {
+		ds.Driver = "mysql"
+	}
 	if ds.Timeout == 0 {
 		ds.Timeout = 5
 	}
@@ -40,19 +42,26 @@ func (ds *Gorm) LoadFromConfig(key string, config *viper.Viper) error {
 	if ds.Charset == "" {
 		ds.Charset = "utf8"
 	}
-	return err
 }
 
-func (ds *Gorm) Db() *gorm.DB {
+func (ds *Gorm) LoadFromConfig(key string, config *viper.Viper) error {
+	err := source.LoadFromConfig(key, config, ds)
+	if err != nil {
+		return err
+	}
+	ds.setDefaults()
+	return nil
+}
+
+func (ds *Gorm) Db() (*gorm.DB, error) {
 	var dialector gorm.Dialector
 
-	if ds.Driver == "" {
-		ds.Driver = "mysql"
-	}
+	ds.setDefaults()
 
 	switch ds.Driver {
 	case "mysql":
-		dsn := ds.User + ":" + ds.Password + "@tcp(" + ds.Addr + ")/" + ds.DBName + "?charset=" + ds.Charset + "&parseTime=True&loc=Local"
+		dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=True&loc=Local&timeout=%ds&readTimeout=%ds&writeTimeout=%ds",
+			ds.User, ds.Password, ds.Addr, ds.DBName, ds.Charset, ds.Timeout, ds.ReadTimeout, ds.WriteTimeout)
 		dialector = mysql.New(mysql.Config{
 			DSN:                       dsn,   // data source name
 			DefaultStringSize:         256,   // default size for string fields
@@ -64,17 +73,27 @@ func (ds *Gorm) Db() *gorm.DB {
 	case "sqlite":
 		dialector = sqlite.Open(ds.DBName)
 	default:
-		log.Fatalf("Unsupported database driver: %s", ds.Driver)
+		return nil, fmt.Errorf("unsupported database driver: %s", ds.Driver)
 	}
 
 	db, err := gorm.Open(dialector, &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
 
 	if ds.Debug {
 		db = db.Debug()
 	}
 
-	return db
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database connection: %v", err)
+	}
+
+	// Set connection pool settings
+	sqlDB.SetConnMaxLifetime(time.Duration(ds.Timeout) * time.Second)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+
+	return db, nil
 }
