@@ -1,13 +1,20 @@
 package data_store
 
 import (
+	"sync"
+	"time"
+
 	"github.com/gocql/gocql"
 	log "github.com/shyyawn/go-to/x/logging"
 	"github.com/shyyawn/go-to/x/source"
 	"github.com/spf13/viper"
-	"sync"
-	"time"
 )
+
+type CassandraInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+	Session() *gocql.Session
+	Cluster() *gocql.ClusterConfig
+}
 
 type Cassandra struct {
 	cluster           *gocql.ClusterConfig

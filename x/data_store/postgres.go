@@ -5,6 +5,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+type PostgresInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+}
+
 type Postgres struct {
 }
 

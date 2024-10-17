@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+type KafkaInterface interface {
+	LoadFromConfig(string, *viper.Viper) error
+	Producer() sarama.AsyncProducer
+}
 type Kafka struct {
 	config          *sarama.Config
 	lock            sync.RWMutex

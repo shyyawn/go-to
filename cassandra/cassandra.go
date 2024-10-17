@@ -1,12 +1,19 @@
 package cassandra
 
 import (
+	"sync"
+	"time"
+
 	"github.com/gocql/gocql"
 	"github.com/shyyawn/go-to/config"
 	log "github.com/shyyawn/go-to/logging"
-	"sync"
-	"time"
 )
+
+type CassandraInterface interface {
+	Init() error
+	Session() *gocql.Session
+	Cluster() *gocql.ClusterConfig
+}
 
 type Cassandra struct {
 	cluster *gocql.ClusterConfig
