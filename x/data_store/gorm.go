@@ -40,14 +40,15 @@ func (ds *Gorm) LoadFromConfig(key string, config *viper.Viper) error {
 	if ds.Charset == "" {
 		ds.Charset = "utf8"
 	}
-	if ds.Driver == "" {
-		ds.Driver = "mysql"
-	}
 	return err
 }
 
 func (ds *Gorm) Db() *gorm.DB {
 	var dialector gorm.Dialector
+
+	if ds.Driver == "" {
+		ds.Driver = "mysql"
+	}
 
 	switch ds.Driver {
 	case "mysql":
