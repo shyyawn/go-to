@@ -9,6 +9,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Gorm struct {
@@ -81,8 +82,15 @@ func (ds *Gorm) Db() (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
 
+	// Set the logging mode based on the Debug flag
 	if ds.Debug {
+		// Enable debug mode for verbose logging
 		db = db.Debug()
+	} else {
+		// Disable all logging in production for better performance
+		newLogger := db.Logger
+		newLogger = newLogger.LogMode(logger.Silent)
+		db.Logger = newLogger
 	}
 
 	sqlDB, err := db.DB()
