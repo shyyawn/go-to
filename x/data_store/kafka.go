@@ -22,11 +22,18 @@ type Kafka struct {
 }
 
 func (ds *Kafka) LoadFromConfig(key string, config *viper.Viper) error {
+	ds.config = sarama.NewConfig()
+
 	return source.LoadFromConfig(key, config, ds)
 }
 
-func (ds *Kafka) Producer() sarama.AsyncProducer {
+func (ds *Kafka) SetSaslTokenProvider(tokenProvider sarama.AccessTokenProvider) {
+	ds.config.Net.SASL.Enable = true
+	ds.config.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+	ds.config.Net.SASL.TokenProvider = tokenProvider
+}
 
+func (ds *Kafka) Producer() sarama.AsyncProducer {
 	if ds.producer != nil {
 		return ds.producer
 	}
@@ -34,8 +41,8 @@ func (ds *Kafka) Producer() sarama.AsyncProducer {
 	defer ds.lock.Unlock()
 	ds.lock.Lock()
 
-	log.Info("Going to create the Kafka ASync Producer")
-	ds.config = sarama.NewConfig()
+	log.Debug("Going to create the Kafka ASync Producer")
+
 	ds.config.Producer.RequiredAcks = sarama.WaitForAll
 	ds.config.Producer.Retry.Max = 10
 	ds.config.Producer.Return.Successes = false
