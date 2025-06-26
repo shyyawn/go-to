@@ -19,18 +19,18 @@ type Kafka struct {
 	Username        string   `mapstructure:"username"`
 	Password        string   `mapstructure:"password"`
 	IsSASL          bool     `mapstructure:"is_sasl"`
+
+	SaslMechanism     sarama.SASLMechanism       `mapstructure:"sasl_mechanism"`
+	SaslTokenProvider sarama.AccessTokenProvider `mapstructure:"sasl_token_provider"`
 }
 
 func (ds *Kafka) LoadFromConfig(key string, config *viper.Viper) error {
-	ds.config = sarama.NewConfig()
-
 	return source.LoadFromConfig(key, config, ds)
 }
 
 func (ds *Kafka) SetSaslTokenProvider(tokenProvider sarama.AccessTokenProvider) {
-	ds.config.Net.SASL.Enable = true
-	ds.config.Net.SASL.Mechanism = sarama.SASLTypeOAuth
-	ds.config.Net.SASL.TokenProvider = tokenProvider
+	ds.SaslMechanism = sarama.SASLTypeOAuth
+	ds.SaslTokenProvider = tokenProvider
 }
 
 func (ds *Kafka) Producer() sarama.AsyncProducer {
@@ -43,9 +43,16 @@ func (ds *Kafka) Producer() sarama.AsyncProducer {
 
 	log.Debug("Going to create the Kafka ASync Producer")
 
+	ds.config = sarama.NewConfig()
 	ds.config.Producer.RequiredAcks = sarama.WaitForAll
 	ds.config.Producer.Retry.Max = 10
 	ds.config.Producer.Return.Successes = false
+
+	if ds.IsSASL {
+		ds.config.Net.SASL.Enable = true
+		ds.config.Net.SASL.Mechanism = ds.SaslMechanism
+		ds.config.Net.SASL.TokenProvider = ds.SaslTokenProvider
+	}
 
 	if ds.MaxMessageBytes == 0 {
 		ds.MaxMessageBytes = 1000000
