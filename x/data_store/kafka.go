@@ -49,8 +49,12 @@ func (ds *Kafka) Producer() sarama.AsyncProducer {
 	ds.config.Producer.Return.Successes = false
 
 	if ds.IsSASL {
+		ds.config.Net.SASL.Handshake = true
+		ds.config.Net.SASL.Version = sarama.SASLHandshakeV1
+
 		ds.config.Net.SASL.Enable = true
-		ds.config.Net.SASL.Mechanism = ds.SaslMechanism
+		ds.config.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+		// ds.config.Net.SASL.Mechanism = ds.SaslMechanism
 		ds.config.Net.SASL.TokenProvider = ds.SaslTokenProvider
 	}
 
