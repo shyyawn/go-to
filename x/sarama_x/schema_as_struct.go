@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strings"
 
@@ -18,6 +19,8 @@ import (
 
 type SchemaRegistryHost struct {
 	RegistryHost            string
+	client                  *http.Client
+	semaphoreWeight         int
 	AvroSchemaCache         map[string]AvroSchemaCacheObj
 	AvroSchemaRegistryCache map[int]*srclient.Schema
 }
@@ -26,10 +29,20 @@ func (host *SchemaRegistryHost) Init(schemaHost string) error {
 	if schemaHost == "" {
 		return fmt.Errorf("Host cannot be empty")
 	}
+
 	host.RegistryHost = schemaHost
 	host.AvroSchemaCache = map[string]AvroSchemaCacheObj{}
 	host.AvroSchemaRegistryCache = map[int]*srclient.Schema{}
 	return nil
+}
+
+func (host *SchemaRegistryHost) SetClient(client *http.Client) {
+	host.client = client
+	host.semaphoreWeight = 16
+}
+
+func (host *SchemaRegistryHost) SetSemaphoreWeight(weight int) {
+	host.semaphoreWeight = weight
 }
 
 func (host *SchemaRegistryHost) GetAvroSchema(namespace string, name string, data interface{}) (schema AvroSchema) {
@@ -213,7 +226,7 @@ func (host *SchemaRegistryHost) GetSchemaById(schemaId int) (*srclient.Schema, e
 		return cachedSchema, nil
 	}
 
-	schemaRegistryClient := srclient.CreateSchemaRegistryClient(host.RegistryHost)
+	schemaRegistryClient := host.createSrmClient()
 
 	latestSchema, err := schemaRegistryClient.GetSchema(schemaId)
 	if err != nil {
@@ -234,7 +247,7 @@ func (host *SchemaRegistryHost) GetSchemaBySubject(subject string) (*srclient.Sc
 		return nil, ErrNoRegistryHostDefined
 	}
 
-	schemaRegistryClient := srclient.CreateSchemaRegistryClient(host.RegistryHost)
+	schemaRegistryClient := host.createSrmClient()
 
 	latestSchema, err := schemaRegistryClient.GetLatestSchema(subject)
 	if err != nil {
@@ -258,7 +271,7 @@ func (host *SchemaRegistryHost) CreateSchemaForSubject(subject, namespace, name 
 		return nil, ErrNoRegistryHostDefined
 	}
 
-	schemaRegistryClient := srclient.CreateSchemaRegistryClient(host.RegistryHost)
+	schemaRegistryClient := host.createSrmClient()
 
 	// Generate the schema from struct
 	subjectSchema := host.GetAvroSchemaJson(namespace, name, encoder)
@@ -454,4 +467,12 @@ func (host *SchemaRegistryHost) ApplyAvroEncoding(namespace string, encoded []by
 		encoded = recordValue // set the record value to encoded
 	}
 	return encoded, err
+}
+
+func (host *SchemaRegistryHost) createSrmClient() *srclient.SchemaRegistryClient {
+	if host.client != nil {
+		return srclient.CreateSchemaRegistryClientWithOptions(host.RegistryHost, host.client, host.semaphoreWeight)
+	}
+
+	return srclient.CreateSchemaRegistryClient(host.RegistryHost)
 }
